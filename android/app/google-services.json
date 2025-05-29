@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "62819243235",
+    "project_id": "aimestore-b7346",
+    "storage_bucket": "aimestore-b7346.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:62819243235:android:6a27b74c3addf428f221d6",
+        "android_client_info": {
+          "package_name": "com.example.aime_store"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDQAJZZ_pNTE551SZ6tEo2hrClIneLWk0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
