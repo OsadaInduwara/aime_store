@@ -50,18 +50,23 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
               // Reload auth provider to get updated user data
               await ref.read(authProvider.notifier).reloadUser();
 
-              // Navigate based on profile completion
+              // Navigate based on auth state
               final authState = ref.read(authProvider);
-              if (authState.hasValue) {
-                final userData = authState.value;
-                if (userData != null && _needsProfileSetup(userData)) {
-                  context.go('/user-setup');
-                } else {
-                  context.go('/home');
-                }
-              } else {
-                context.go('/user-setup');
-              }
+              authState.when(
+                unauthenticated: () => context.go('/auth-selection'),
+                authenticating: (message) {
+                  // Wait for authentication to complete
+                },
+                authenticated: (user) => context.go('/home'),
+                error: (exception) => context.go('/auth-selection'),
+                emailVerificationRequired: (email) {
+                  // Stay on this screen
+                },
+                phoneVerificationRequired: (phoneNumber, verificationId) {
+                  // Not applicable
+                },
+                profileSetupRequired: (user) => context.go('/user-setup'),
+              );
             }
           }
         }
@@ -71,11 +76,6 @@ class _EmailVerificationScreenState extends ConsumerState<EmailVerificationScree
     });
   }
 
-  bool _needsProfileSetup(dynamic user) {
-    if (user == null) return true;
-    final displayName = user.displayName ?? '';
-    return displayName.isEmpty || displayName == 'User';
-  }
 
   Future<void> _resendVerificationEmail() async {
     if (!_canResend) return;

@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/utils/app_constants.dart';
-import '../../../../core/widgets/custom_button.dart';
-import '../../../../core/widgets/custom_text_field.dart';
-import '../../../../core/widgets/profile_image_picker.dart';
-import '../../../../core/widgets/loading_overlay.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/presentation/widgets/custom_button.dart';
+import '../../../../core/presentation/widgets/custom_text_field.dart';
+import '../../../../core/presentation/widgets/profile_image_picker.dart';
+import '../../../../core/presentation/widgets/loading_overlay.dart';
 import '../../../../core/data/models/store_model.dart';
 import '../../../../core/services/store_service.dart';
 import '../../../../core/exceptions/app_exceptions.dart';

@@ -47,7 +47,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider).value;
+    final user = ref.watch(authProvider).maybeWhen(
+      authenticated: (user) => user,
+      profileSetupRequired: (user) => user,
+      orElse: () => null,
+    );
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 

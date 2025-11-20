@@ -12,7 +12,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/presentation/widgets/custom_button.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../home/presentation/providers/recommendation_provider.dart';
+import '../../../home/presentation/providers/recommendation_provider.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productId;
@@ -175,7 +175,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           children: [
             Text(
               CurrencyFormatter.format(
-                  product.pricing.salePrice ?? product.pricing.basePrice),
+                  product.pricing.salePrice ?? product.pricing.basePrice, 'LKR'),
               style: theme.textTheme.headlineSmall
                   ?.copyWith(fontWeight: FontWeight.bold, color: theme.primaryColor),
             ),
@@ -293,7 +293,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     product.id,
                     metadata: {
                       'source': 'product_detail',
-                      'price': product.price,
+                      'price': product.pricing.basePrice,
                       'category': product.categoryId,
                       'timestamp': DateTime.now().toIso8601String(),
                     },

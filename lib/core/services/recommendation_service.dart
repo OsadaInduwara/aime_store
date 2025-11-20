@@ -404,14 +404,14 @@ class RecommendationService {
       final querySnapshot = await _firestore
           .collection('products')
           .where('settings.isActive', isEqualTo: true)
-          .orderBy('stats.viewCount', descending: true)
+          .orderBy('stats.orderCount', descending: true)
           .limit(limit * 2)
           .get();
 
       final products = querySnapshot.docs
           .map((doc) => ProductModel.fromJson({
                 'id': doc.id,
-                ...doc.data(),
+                ...(doc.data() as Map<String, dynamic>? ?? {}),
               }))
           .toList();
 
@@ -454,7 +454,7 @@ class RecommendationService {
       final products = querySnapshot.docs
           .map((doc) => ProductModel.fromJson({
                 'id': doc.id,
-                ...doc.data(),
+                ...(doc.data() as Map<String, dynamic>? ?? {}),
               }))
           .toList();
 
@@ -489,7 +489,7 @@ class RecommendationService {
       final products = querySnapshot.docs
           .map((doc) => ProductModel.fromJson({
                 'id': doc.id,
-                ...doc.data(),
+                ...(doc.data() as Map<String, dynamic>? ?? {}),
               }))
           .toList();
 
@@ -726,7 +726,7 @@ class RecommendationService {
       // 1. Most popular products (high rating + high order count)
       final popularProducts = await _firestore
           .collection('products')
-          .where('isActive', isEqualTo: true)
+          .where('settings.isActive', isEqualTo: true)
           .orderBy('stats.orderCount', descending: true)
           .limit(limit ~/ 2)
           .get();
@@ -748,7 +748,7 @@ class RecommendationService {
       // 2. Recently added products with good initial ratings
       final recentProducts = await _firestore
           .collection('products')
-          .where('isActive', isEqualTo: true)
+          .where('settings.isActive', isEqualTo: true)
           .where('stats.rating', isGreaterThanOrEqualTo: 4.0)
           .orderBy('stats.rating', descending: true)
           .orderBy('createdAt', descending: true)
@@ -775,7 +775,6 @@ class RecommendationService {
 
       // 3. If still need more, get products from different categories for variety
       if (fallbackRecommendations.length < limit) {
-        final remainingLimit = limit - fallbackRecommendations.length;
         final existingIds = fallbackRecommendations.map((r) => r.productId).toSet();
 
         final categories = await _firestore.collection('categories').limit(5).get();
@@ -784,7 +783,7 @@ class RecommendationService {
 
           final categoryProducts = await _firestore
               .collection('products')
-              .where('isActive', isEqualTo: true)
+              .where('settings.isActive', isEqualTo: true)
               .where('categoryId', isEqualTo: categoryDoc.id)
               .orderBy('stats.rating', descending: true)
               .limit(2)
@@ -801,7 +800,6 @@ class RecommendationService {
                 type: RecommendationType.fallback,
                 reason: 'Category variety',
                 metadata: {
-                  'category': categoryDoc.data()['name'],
                   'rating': product.stats.rating,
                 },
               ));
@@ -815,7 +813,7 @@ class RecommendationService {
       fallbackRecommendations.sort((a, b) => b.score.compareTo(a.score));
       return fallbackRecommendations.take(limit).toList();
     } catch (e) {
-      debugPrint('Error getting fallback recommendations: $e');
+      print('Error getting fallback recommendations: $e');
       return [];
     }
   }

@@ -10,10 +10,14 @@ import '../../utils/currency_formatter.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
+  final bool showQuickActions;
+  final VoidCallback? onTap;
 
   const ProductCard({
     super.key,
     required this.product,
+    this.showQuickActions = true,
+    this.onTap,
   });
 
   @override
@@ -21,7 +25,7 @@ class ProductCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return GestureDetector(
-      onTap: () => context.push('/product/${product.id}'),
+      onTap: onTap ?? () => context.push('/product/${product.id}'),
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardColor,
@@ -149,6 +153,7 @@ class ProductCard extends StatelessWidget {
                       Text(
                         CurrencyFormatter.format(
                           product.pricing.salePrice ?? product.pricing.basePrice,
+                          'LKR',
                         ),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,

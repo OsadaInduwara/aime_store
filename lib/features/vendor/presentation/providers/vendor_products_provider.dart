@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/data/models/product_model.dart';
 import '../../../../core/services/product_service.dart';
+import '../../../../core/presentation/providers/products_provider.dart';
 
 // Provider for vendor products
 final vendorProductsProvider = FutureProvider.family<List<ProductModel>, bool?>((ref, isActive) async {

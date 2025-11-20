@@ -1,0 +1,244 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
+    }
+    
+    function isVendor() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'vendor';
+    }
+    
+    // Validate email format
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    // Validate phone number format (Sri Lankan)
+    function isValidPhone(phone) {
+      return phone.matches('^\\+94[0-9]{9}$') || phone.matches('^0[0-9]{9}$');
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read user profiles (for displaying vendor info, etc.)
+      allow read: if true;
+      
+      // Only the user can create their own profile
+      allow create: if isOwner(userId) &&
+                      request.resource.data.keys().hasAll(['id', 'displayName', 'userType', 'createdAt']) &&
+                      request.resource.data.id == userId;
+      
+      // Only the user can update their own profile
+      allow update: if isOwner(userId) &&
+                      request.resource.data.id == userId &&
+                      request.resource.data.userType == resource.data.userType; // Can't change user type
+      
+      // Only the user can delete their own profile
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+    
+    // Stores collection
+    match /stores/{storeId} {
+      // Anyone can read stores (public browsing)
+      allow read: if true;
+      
+      // Only vendors can create stores
+      allow create: if isAuthenticated() &&
+                      isVendor() &&
+                      request.resource.data.ownerId == request.auth.uid &&
+                      request.resource.data.keys().hasAll(['id', 'ownerId', 'storeName', 'createdAt']);
+      
+      // Only store owner can update
+      allow update: if isAuthenticated() &&
+                      resource.data.ownerId == request.auth.uid &&
+                      request.resource.data.ownerId == resource.data.ownerId; // Can't change owner
+      
+      // Only store owner or admin can delete
+      allow delete: if isAuthenticated() &&
+                      (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+    
+    // Products collection
+    match /products/{productId} {
+      // Anyone can read products (public browsing)
+      allow read: if true;
+      
+      // Only vendors can create products for their own stores
+      allow create: if isAuthenticated() &&
+                      isVendor() &&
+                      request.resource.data.vendorId == request.auth.uid &&
+                      request.resource.data.keys().hasAll(['id', 'name', 'price', 'vendorId', 'storeId']) &&
+                      request.resource.data.price >= 0 &&
+                      request.resource.data.stock >= 0;
+      
+      // Only product owner can update
+      allow update: if isAuthenticated() &&
+                      resource.data.vendorId == request.auth.uid &&
+                      request.resource.data.vendorId == resource.data.vendorId && // Can't change vendor
+                      request.resource.data.price >= 0 &&
+                      request.resource.data.stock >= 0;
+      
+      // Only product owner or admin can delete
+      allow delete: if isAuthenticated() &&
+                      (resource.data.vendorId == request.auth.uid || isAdmin());
+    }
+    
+    // Orders collection
+    match /orders/{orderId} {
+      // Users can only read their own orders
+      allow read: if isAuthenticated() &&
+                    (resource.data.userId == request.auth.uid ||
+                     resource.data.vendorId == request.auth.uid ||
+                     isAdmin());
+      
+      // Only authenticated users can create orders for themselves
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.keys().hasAll(['id', 'userId', 'items', 'totalAmount', 'status', 'createdAt']) &&
+                      request.resource.data.totalAmount > 0 &&
+                      request.resource.data.status == 'pending';
+      
+      // Users can update their own pending orders, vendors can update status
+      allow update: if isAuthenticated() &&
+                      ((resource.data.userId == request.auth.uid && resource.data.status == 'pending') ||
+                       (resource.data.vendorId == request.auth.uid) ||
+                       isAdmin());
+      
+      // Only admin can delete orders
+      allow delete: if isAdmin();
+    }
+    
+    // Cart collection (user-specific subcollection)
+    match /users/{userId}/cart/{itemId} {
+      // Only the user can read their own cart
+      allow read: if isOwner(userId);
+      
+      // Only the user can add to their cart
+      allow create: if isOwner(userId) &&
+                      request.resource.data.quantity > 0;
+      
+      // Only the user can update their cart
+      allow update: if isOwner(userId) &&
+                      request.resource.data.quantity >= 0;
+      
+      // Only the user can delete from their cart
+      allow delete: if isOwner(userId);
+    }
+    
+    // Wishlist collection (user-specific subcollection)
+    match /users/{userId}/wishlist/{productId} {
+      // Only the user can read their own wishlist
+      allow read: if isOwner(userId);
+      
+      // Only the user can add to their wishlist
+      allow create: if isOwner(userId);
+      
+      // Only the user can remove from their wishlist
+      allow delete: if isOwner(userId);
+    }
+    
+    // Addresses collection (user-specific subcollection)
+    match /users/{userId}/addresses/{addressId} {
+      // Only the user can read their own addresses
+      allow read: if isOwner(userId);
+      
+      // Only the user can add addresses
+      allow create: if isOwner(userId) &&
+                      request.resource.data.keys().hasAll(['id', 'name', 'phone', 'address', 'city']);
+      
+      // Only the user can update their addresses
+      allow update: if isOwner(userId);
+      
+      // Only the user can delete their addresses
+      allow delete: if isOwner(userId);
+    }
+    
+    // Reviews collection
+    match /reviews/{reviewId} {
+      // Anyone can read reviews
+      allow read: if true;
+      
+      // Only authenticated users can create reviews for products they purchased
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.rating >= 1 &&
+                      request.resource.data.rating <= 5;
+      
+      // Only review author can update their own review
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid;
+      
+      // Only review author or admin can delete
+      allow delete: if isAuthenticated() &&
+                      (resource.data.userId == request.auth.uid || isAdmin());
+    }
+    
+    // User behavior tracking (for recommendations)
+    match /userBehavior/{behaviorId} {
+      // Only the user can read their own behavior data
+      allow read: if isAuthenticated() &&
+                    resource.data.userId == request.auth.uid;
+      
+      // Only the user can create their own behavior data
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid;
+      
+      // No updates or deletes (append-only for analytics)
+      allow update, delete: if false;
+    }
+    
+    // User preferences (for recommendations)
+    match /userPreferences/{userId} {
+      // Only the user can read their own preferences
+      allow read: if isOwner(userId);
+      
+      // Only the user can create/update their preferences
+      allow create, update: if isOwner(userId);
+      
+      // Only the user can delete their preferences
+      allow delete: if isOwner(userId);
+    }
+    
+    // Categories collection (read-only for users, admin-only write)
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Only the recipient can read their notifications
+      allow read: if isAuthenticated() &&
+                    resource.data.userId == request.auth.uid;
+      
+      // System can create notifications (via Cloud Functions)
+      allow create: if isAuthenticated();
+      
+      // Only recipient can mark as read
+      allow update: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid;
+      
+      // Only recipient can delete their notifications
+      allow delete: if isAuthenticated() &&
+                      resource.data.userId == request.auth.uid;
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

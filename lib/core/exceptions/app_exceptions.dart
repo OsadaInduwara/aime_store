@@ -1,5 +1,4 @@
 // lib/core/exceptions/app_exceptions.dart
-import 'package:flutter/material.dart';
 
 /// Base exception class for all app exceptions
 abstract class AppException implements Exception {

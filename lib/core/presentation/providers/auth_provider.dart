@@ -1,193 +1,253 @@
-// lib/core/providers/auth_provider.dart - FIXED VERSION
+// lib/core/presentation/providers/auth_provider.dart
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../data/models/user_model.dart';
+import '../../data/models/auth_state.dart';
 import '../../services/firebase_service.dart';
-import '../../services/notification_service.dart';
+import '../../services/error_service.dart';
+import '../../exceptions/app_exceptions.dart';
 
-final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<UserModel?>>(
-      (ref) => AuthNotifier(),
+/// Improved authentication provider with better state management
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
+  (ref) => AuthNotifier(),
 );
 
-class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
-  AuthNotifier() : super(const AsyncValue.loading()) {
+/// Authentication controller provider for UI actions
+final authControllerProvider = Provider<AuthController>(
+  (ref) => AuthController(ref.read(authProvider.notifier)),
+);
+
+class AuthNotifier extends StateNotifier<AuthState> {
+  AuthNotifier() : super(const AuthState.authenticating()) {
     _init();
   }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final ErrorService _errorService = ErrorService();
 
-  String? _verificationId;
+  StreamSubscription<User?>? _authStreamSubscription;
 
+  /// Initialize authentication state
   Future<void> _init() async {
     try {
-      // Listen to auth state changes
-      _auth.authStateChanges().listen((User? user) async {
-        debugPrint('Auth state changed: ${user?.uid}');
-        if (user != null) {
-          await _loadUserData(user);
-        } else {
-          state = const AsyncValue.data(null);
-        }
-      }, onError: (error) {
-        debugPrint('Auth state changes error: $error');
-        state = AsyncValue.error(error, StackTrace.current);
-      });
+      // Listen to auth state changes with debouncing to prevent rapid state changes
+      _authStreamSubscription = _auth.authStateChanges()
+          .distinct() // Prevent duplicate events
+          .listen(
+            _handleAuthStateChange,
+            onError: (error) => _handleError(error),
+          );
 
-      // Check current user
+      // Check current user immediately
       final currentUser = _auth.currentUser;
-      if (currentUser != null) {
-        await _loadUserData(currentUser);
-      } else {
-        state = const AsyncValue.data(null);
-      }
-    } catch (e, stackTrace) {
-      debugPrint('Auth init error: $e');
-      state = AsyncValue.error(e, stackTrace);
+      await _handleAuthStateChange(currentUser);
+    } catch (error) {
+      _handleError(error);
     }
   }
 
-  Future<void> _loadUserData(User firebaseUser) async {
-    try {
-      debugPrint('Loading user data for: ${firebaseUser.uid}');
+  @override
+  void dispose() {
+    _authStreamSubscription?.cancel();
+    super.dispose();
+  }
 
-      final userDoc = await _firestore
+  /// Handle Firebase auth state changes
+  Future<void> _handleAuthStateChange(User? user) async {
+    try {
+      if (user == null) {
+        state = const AuthState.unauthenticated();
+        return;
+      }
+
+      // Check if email verification is required
+      if (user.email != null && !user.emailVerified) {
+        state = AuthState.emailVerificationRequired(user.email!);
+        return;
+      }
+
+      // Load or create user profile
+      final userModel = await _loadOrCreateUserProfile(user);
+
+      // Check if profile setup is required
+      if (_requiresProfileSetup(userModel)) {
+        state = AuthState.profileSetupRequired(userModel);
+        return;
+      }
+
+      // User is fully authenticated
+      state = AuthState.authenticated(userModel);
+
+      // Set analytics user ID
+      await FirebaseService.setUserId(user.uid);
+    } catch (error) {
+      _handleError(error);
+    }
+  }
+
+  /// Load existing user or create new profile
+  Future<UserModel> _loadOrCreateUserProfile(User firebaseUser) async {
+    final userDoc = await _firestore
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    if (userDoc.exists && userDoc.data() != null) {
+      // Existing user
+      return UserModel.fromJson({
+        'id': firebaseUser.uid,
+        ...userDoc.data()!,
+      });
+    } else {
+      // New user - create basic profile
+      final newUser = UserModel(
+        id: firebaseUser.uid,
+        phoneNumber: firebaseUser.phoneNumber ?? '',
+        displayName: firebaseUser.displayName ?? 'User',
+        email: firebaseUser.email,
+        profileImage: firebaseUser.photoURL,
+        userType: UserType.customer,
+        addresses: const [],
+        preferences: const UserPreferences(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Save to Firestore
+      await _firestore
           .collection('users')
           .doc(firebaseUser.uid)
-          .get();
+          .set(newUser.toJson());
 
-      UserModel user;
-      if (userDoc.exists && userDoc.data() != null) {
-        // User document exists, load data
-        final userData = userDoc.data()!;
-        user = UserModel.fromJson({
-          'id': firebaseUser.uid,
-          ...userData,
-        });
-        debugPrint('Loaded existing user: ${user.displayName}');
-      } else {
-        // New user, create document with basic info
-        user = UserModel(
-          id: firebaseUser.uid,
-          phoneNumber: firebaseUser.phoneNumber ?? '',
-          displayName: firebaseUser.displayName ?? 'User',
-          email: firebaseUser.email,
-          profileImage: firebaseUser.photoURL,
-          userType: UserType.customer,
-          addresses: const [],
-          preferences: const UserPreferences(),
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
-
-        // Save to Firestore
-        await _firestore
-            .collection('users')
-            .doc(firebaseUser.uid)
-            .set(user.toJson());
-
-        debugPrint('Created new user: ${user.displayName}');
-      }
-
-      // Set user ID for analytics
-      await FirebaseService.setUserId(user.id);
-
-      state = AsyncValue.data(user);
-    } catch (e, stackTrace) {
-      debugPrint('Load user data error: $e');
-      state = AsyncValue.error(e, stackTrace);
+      return newUser;
     }
   }
 
-  // Phone Authentication
-  Future<void> signInWithPhoneNumber(String phoneNumber) async {
+  /// Check if user profile setup is required
+  bool _requiresProfileSetup(UserModel user) {
+    // Check if essential fields are missing
+    return user.displayName.isEmpty ||
+           user.displayName == 'User' ||
+           (user.phoneNumber.isEmpty && user.email == null);
+  }
+
+  /// Handle errors consistently
+  void _handleError(dynamic error) {
+    final appException = error is AppException
+        ? error
+        : error.toString().contains('firebase')
+            ? AuthException.fromFirebaseAuthException(error)
+            : AuthException(error.toString());
+
+    state = AuthState.error(appException);
+    _errorService.handleError(error);
+  }
+
+  /// Phone authentication
+  Future<AuthResult> signInWithPhone(String phoneNumber) async {
     try {
-      debugPrint('Starting phone auth for: $phoneNumber');
+      state = const AuthState.authenticating(message: 'Sending verification code...');
+
+      final completer = Completer<AuthResult>();
 
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
+        timeout: const Duration(seconds: 60),
         verificationCompleted: (PhoneAuthCredential credential) async {
-          debugPrint('Phone verification auto-completed');
-          await _signInWithCredential(credential);
+          try {
+            await _auth.signInWithCredential(credential);
+            completer.complete(const AuthResult.success(message: 'Phone verified successfully'));
+          } catch (error) {
+            completer.complete(AuthResult.error(AuthException.fromFirebaseAuthException(error)));
+          }
         },
-        verificationFailed: (FirebaseAuthException e) {
-          debugPrint('Phone verification failed: ${e.code} - ${e.message}');
-          throw Exception(_getAuthErrorMessage(e.code));
+        verificationFailed: (FirebaseAuthException error) {
+          completer.complete(AuthResult.error(AuthException.fromFirebaseAuthException(error)));
         },
         codeSent: (String verificationId, int? resendToken) {
-          debugPrint('Code sent, verification ID: $verificationId');
           _verificationId = verificationId;
+          state = AuthState.phoneVerificationRequired(
+            phoneNumber: phoneNumber,
+            verificationId: verificationId,
+          );
+          completer.complete(AuthResult.requiresAction(
+            actionType: AuthActionType.phoneVerification,
+            data: {
+              'phoneNumber': phoneNumber,
+              'verificationId': verificationId,
+            },
+            message: 'Verification code sent to $phoneNumber',
+          ));
         },
         codeAutoRetrievalTimeout: (String verificationId) {
-          debugPrint('Code auto-retrieval timeout: $verificationId');
           _verificationId = verificationId;
         },
-        timeout: const Duration(seconds: 60),
       );
-    } catch (e) {
-      debugPrint('Phone auth error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+
+      return await completer.future;
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  Future<void> verifyOTP(String verificationId, String otp) async {
+  /// Verify OTP
+  Future<AuthResult> verifyOTP(String verificationId, String otp) async {
     try {
-      debugPrint('Verifying OTP: $otp');
+      state = const AuthState.authenticating(message: 'Verifying code...');
 
       final credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
         smsCode: otp,
       );
 
-      await _signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
       await FirebaseService.logLogin('phone');
-    } catch (e) {
-      debugPrint('OTP verification error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+
+      return const AuthResult.success(message: 'Phone verified successfully');
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  // Email Authentication
-  Future<void> signInWithEmail({
-    required String email,
-    required String password,
-  }) async {
+  /// Email sign in
+  Future<AuthResult> signInWithEmail(String email, String password) async {
     try {
-      debugPrint('Signing in with email: $email');
+      state = const AuthState.authenticating(message: 'Signing in...');
 
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      if (credential.user != null && credential.user!.email != null && !credential.user!.emailVerified) {
-        await _auth.signOut();
-        throw Exception('Please verify your email before signing in');
+      if (credential.user != null && !credential.user!.emailVerified) {
+        return AuthResult.requiresAction(
+          actionType: AuthActionType.emailVerification,
+          data: {'email': email},
+          message: 'Please verify your email address',
+        );
       }
 
       await FirebaseService.logLogin('email');
-    } catch (e) {
-      debugPrint('Email sign in error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+      return const AuthResult.success(message: 'Signed in successfully');
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  Future<void> signUpWithEmail({
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
+  /// Email sign up
+  Future<AuthResult> signUpWithEmail(String email, String password, String displayName) async {
     try {
-      debugPrint('Signing up with email: $email');
+      state = const AuthState.authenticating(message: 'Creating account...');
 
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -198,180 +258,142 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
         await credential.user!.updateDisplayName(displayName);
         await credential.user!.sendEmailVerification();
         await FirebaseService.logSignUp('email');
+
+        return AuthResult.requiresAction(
+          actionType: AuthActionType.emailVerification,
+          data: {'email': email},
+          message: 'Verification email sent to $email',
+        );
       }
-    } catch (e) {
-      debugPrint('Email sign up error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+
+      return const AuthResult.success();
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  // Google Sign In
-  Future<void> signInWithGoogle() async {
+  /// Google sign in
+  Future<AuthResult> signInWithGoogle() async {
     try {
-      debugPrint('Starting Google sign in');
+      state = const AuthState.authenticating(message: 'Signing in with Google...');
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        debugPrint('Google sign in cancelled');
-        return;
+        state = const AuthState.unauthenticated();
+        return AuthResult.error(const AuthException('Sign in cancelled'));
       }
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
+      final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      await _signInWithCredential(credential);
+      await _auth.signInWithCredential(credential);
       await FirebaseService.logLogin('google');
-    } catch (e) {
-      debugPrint('Google sign in error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+
+      return const AuthResult.success(message: 'Signed in with Google');
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  // Facebook Sign In
-  Future<void> signInWithFacebook() async {
+  /// Facebook sign in
+  Future<AuthResult> signInWithFacebook() async {
     try {
-      debugPrint('Starting Facebook sign in');
+      state = const AuthState.authenticating(message: 'Signing in with Facebook...');
 
-      final LoginResult result = await FacebookAuth.instance.login();
+      final result = await FacebookAuth.instance.login();
 
-      if (result.status == LoginStatus.success) {
-        final AccessToken accessToken = result.accessToken!;
-
-        String token;
-        try {
-          token = accessToken.tokenString;
-        } catch (e) {
-          token = (accessToken as dynamic).token;
-        }
-
-        final credential = FacebookAuthProvider.credential(token);
-        await _signInWithCredential(credential);
-        await FirebaseService.logLogin('facebook');
-      } else {
-        throw Exception('Facebook sign in cancelled or failed');
+      if (result.status != LoginStatus.success) {
+        state = const AuthState.unauthenticated();
+        return AuthResult.error(const AuthException('Facebook sign in failed'));
       }
-    } catch (e) {
-      debugPrint('Facebook sign in error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
-      rethrow;
+
+      final accessToken = result.accessToken!;
+      final credential = FacebookAuthProvider.credential(accessToken.tokenString);
+
+      await _auth.signInWithCredential(credential);
+      await FirebaseService.logLogin('facebook');
+
+      return const AuthResult.success(message: 'Signed in with Facebook');
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  Future<void> _signInWithCredential(AuthCredential credential) async {
-    try {
-      debugPrint('Signing in with credential');
-      final userCredential = await _auth.signInWithCredential(credential);
-      debugPrint('Credential sign in successful: ${userCredential.user?.uid}');
-    } catch (e) {
-      debugPrint('Credential sign in error: $e');
-      rethrow;
-    }
-  }
-
-  // Password Reset
-  Future<void> sendPasswordResetEmail(String email) async {
+  /// Send password reset email
+  Future<AuthResult> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-    } catch (e) {
-      throw Exception(_getAuthErrorMessage(e.toString()));
+      return AuthResult.success(message: 'Password reset email sent to $email');
+    } catch (error) {
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  // Email Verification
-  Future<void> sendEmailVerification() async {
+  /// Send email verification
+  Future<AuthResult> sendEmailVerification() async {
     try {
       final user = _auth.currentUser;
       if (user != null && !user.emailVerified) {
         await user.sendEmailVerification();
+        return AuthResult.success(message: 'Verification email sent');
       }
-    } catch (e) {
-      throw Exception('Failed to send verification email');
+      return AuthResult.error(const AuthException('No user found or email already verified'));
+    } catch (error) {
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
+  /// Reload user to check email verification
   Future<void> reloadUser() async {
     try {
       final user = _auth.currentUser;
       if (user != null) {
         await user.reload();
         final updatedUser = _auth.currentUser;
-        if (updatedUser != null && updatedUser.emailVerified) {
-          await _loadUserData(updatedUser);
+        if (updatedUser?.emailVerified == true) {
+          await _handleAuthStateChange(updatedUser);
         }
       }
-    } catch (e) {
-      debugPrint('Reload user error: $e');
+    } catch (error) {
+      _handleError(error);
     }
   }
 
-  Future<void> updateProfile(UserModel updatedUser) async {
+  /// Update user profile
+  Future<AuthResult> updateProfile(UserModel updatedUser) async {
     try {
-      debugPrint('Updating profile for: ${updatedUser.id}');
+      state = const AuthState.authenticating(message: 'Updating profile...');
 
       // Update Firebase Auth profile
       final firebaseUser = _auth.currentUser;
       if (firebaseUser != null) {
-        if (firebaseUser.displayName != updatedUser.displayName) {
-          await firebaseUser.updateDisplayName(updatedUser.displayName);
-          debugPrint('Updated Firebase Auth display name');
-        }
+        await firebaseUser.updateDisplayName(updatedUser.displayName);
       }
 
-      // Convert to JSON and handle nested objects properly
-      final userData = updatedUser.toJson();
-
-      // Convert Timestamp objects to proper format for Firestore
-      final Map<String, dynamic> firestoreData = {
-        'phoneNumber': userData['phoneNumber'],
-        'email': userData['email'],
-        'displayName': userData['displayName'],
-        'profileImage': userData['profileImage'],
-        'userType': userData['userType'],
-        'addresses': userData['addresses'] ?? [],
-        'preferences': {
-          'language': updatedUser.preferences.language,
-          'currency': updatedUser.preferences.currency,
-          'notifications': {
-            'push': updatedUser.preferences.notifications.push,
-            'sms': updatedUser.preferences.notifications.sms,
-            'email': updatedUser.preferences.notifications.email,
-            'orderUpdates': updatedUser.preferences.notifications.orderUpdates,
-            'promotions': updatedUser.preferences.notifications.promotions,
-          },
-        },
-        'createdAt': updatedUser.createdAt,
-        'updatedAt': updatedUser.updatedAt,
-        'lastLoginAt': updatedUser.lastLoginAt,
-      };
-
-      debugPrint('Saving Firestore data: $firestoreData');
-
+      // Update Firestore document
       await _firestore
           .collection('users')
           .doc(updatedUser.id)
-          .set(firestoreData);
+          .set(updatedUser.toJson());
 
-      // Update state immediately
-      state = AsyncValue.data(updatedUser);
-      debugPrint('Profile updated successfully in provider');
-    } catch (e, stackTrace) {
-      debugPrint('Update profile error: $e');
-      debugPrint('Stack trace: $stackTrace');
-      state = AsyncValue.error(e, stackTrace);
-      throw Exception('Failed to update profile: $e');
+      state = AuthState.authenticated(updatedUser);
+      return const AuthResult.success(message: 'Profile updated successfully');
+    } catch (error) {
+      _handleError(error);
+      return AuthResult.error(AuthException.fromFirebaseAuthException(error));
     }
   }
 
-  // Sign Out
+  /// Sign out
   Future<void> signOut() async {
     try {
-      debugPrint('Signing out');
+      state = const AuthState.authenticating(message: 'Signing out...');
 
       // Sign out from all providers
       if (await _googleSignIn.isSignedIn()) {
@@ -380,38 +402,43 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
       await FacebookAuth.instance.logOut();
       await _auth.signOut();
 
-      state = const AsyncValue.data(null);
-      debugPrint('Sign out successful');
-    } catch (e) {
-      debugPrint('Sign out error: $e');
-      throw Exception('Failed to sign out: $e');
+      state = const AuthState.unauthenticated();
+    } catch (error) {
+      _handleError(error);
     }
   }
+}
 
-  String _getAuthErrorMessage(String errorCode) {
-    switch (errorCode) {
-      case 'user-not-found':
-        return 'No user found with this email address';
-      case 'wrong-password':
-        return 'Incorrect password';
-      case 'email-already-in-use':
-        return 'An account already exists with this email';
-      case 'weak-password':
-        return 'Password is too weak';
-      case 'invalid-email':
-        return 'Invalid email address';
-      case 'user-disabled':
-        return 'This account has been disabled';
-      case 'too-many-requests':
-        return 'Too many failed attempts. Please try again later';
-      case 'invalid-phone-number':
-        return 'Invalid phone number format';
-      case 'invalid-verification-code':
-        return 'Invalid verification code';
-      case 'session-expired':
-        return 'Verification session expired. Please try again';
-      default:
-        return 'Authentication failed. Please try again';
-    }
-  }
+/// Authentication controller for UI interactions
+class AuthController {
+  AuthController(this._notifier);
+
+  final AuthNotifier _notifier;
+
+  Future<AuthResult> signInWithPhone(String phoneNumber) =>
+      _notifier.signInWithPhone(phoneNumber);
+
+  Future<AuthResult> verifyOTP(String verificationId, String otp) =>
+      _notifier.verifyOTP(verificationId, otp);
+
+  Future<AuthResult> signInWithEmail(String email, String password) =>
+      _notifier.signInWithEmail(email, password);
+
+  Future<AuthResult> signUpWithEmail(String email, String password, String displayName) =>
+      _notifier.signUpWithEmail(email, password, displayName);
+
+  Future<AuthResult> signInWithGoogle() => _notifier.signInWithGoogle();
+
+  Future<AuthResult> signInWithFacebook() => _notifier.signInWithFacebook();
+
+  Future<AuthResult> sendPasswordResetEmail(String email) =>
+      _notifier.sendPasswordResetEmail(email);
+
+  Future<AuthResult> sendEmailVerification() => _notifier.sendEmailVerification();
+
+  Future<void> reloadUser() => _notifier.reloadUser();
+
+  Future<AuthResult> updateProfile(UserModel user) => _notifier.updateProfile(user);
+
+  Future<void> signOut() => _notifier.signOut();
 }

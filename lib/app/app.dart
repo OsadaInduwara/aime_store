@@ -1,9 +1,7 @@
 // lib/app/app.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../core/presentation/providers/language_provider.dart';
 import '../core/presentation/providers/theme_provider.dart';
@@ -12,6 +10,8 @@ import '../core/router/app_router.dart';
 import '../core/constants/app_constants.dart';
 import '../l10n/app_localizations.dart';
 import '../features/home/presentation/providers/recommendation_provider.dart';
+import '../core/presentation/widgets/global_loading_overlay.dart';
+import '../core/presentation/widgets/global_error_handler.dart';
 
 class ECommerceApp extends ConsumerStatefulWidget {
   const ECommerceApp({super.key});
@@ -27,7 +27,13 @@ class _ECommerceAppState extends ConsumerState<ECommerceApp> {
     // Track app open
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authProvider);
-      if (authState.value != null) {
+      final user = authState.maybeWhen(
+        authenticated: (user) => user,
+        profileSetupRequired: (user) => user,
+        orElse: () => null,
+      );
+      
+      if (user != null) {
         final behaviorTracker = ref.read(userBehaviorTrackerProvider);
         behaviorTracker.trackAppOpen(metadata: {
           'platform': 'flutter',
@@ -65,11 +71,15 @@ class _ECommerceAppState extends ConsumerState<ECommerceApp> {
       ],
       supportedLocales: AppConstants.supportedLocales,
 
-      // global TextScaler override
+      // global TextScaler override with error handling and loading overlay
       builder: (ctx, child) {
         return MediaQuery(
           data: MediaQuery.of(ctx).copyWith(textScaler: TextScaler.linear(1.0)),
-          child: child!,
+          child: GlobalErrorHandler(
+            child: GlobalLoadingOverlay(
+              child: child!,
+            ),
+          ),
         );
       },
     );

@@ -6,10 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/presentation/providers/auth_provider.dart';
+import '../../../../core/data/models/auth_state.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/presentation/widgets/custom_button.dart';
 import '../../../../core/presentation/widgets/custom_text_field.dart';
-import '../../../../core/presentation/widgets/loading_overlay.dart';
+import '../../../../core/presentation/widgets/smooth_loading_overlay.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class EmailAuthScreen extends ConsumerStatefulWidget {
@@ -35,7 +36,7 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen>
   final _signUpPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _isLoading = false;
+
 
   @override
   void initState() {
@@ -57,139 +58,108 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen>
   }
 
   void _setupAuthListener() {
-    FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      if (user != null && mounted && !_isLoading) {
-        if (user.emailVerified) {
-          _navigateBasedOnUserState();
-        } else {
-          // User needs email verification
-          context.go('/email-verification');
-        }
-      }
+    // Listen to auth state changes using Riverpod
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listen<AuthState>(authProvider, (previous, next) {
+        if (!mounted) return;
+
+        next.when(
+          unauthenticated: () {
+            // Stay on auth screen
+          },
+          authenticating: (message) {
+            // Loading is handled by smooth overlay
+          },
+          authenticated: (user) {
+            context.go('/home');
+          },
+          error: (exception) {
+            // Error is handled by ErrorService in provider
+          },
+          emailVerificationRequired: (email) {
+            context.go('/email-verification');
+          },
+          phoneVerificationRequired: (phoneNumber, verificationId) {
+            // Not applicable for email auth
+          },
+          profileSetupRequired: (user) {
+            context.go('/user-setup');
+          },
+        );
+      });
     });
   }
 
-  void _navigateBasedOnUserState() {
-    final authState = ref.read(authProvider);
-    final user = authState.value;
 
-    if (user != null) {
-      // Check if user needs to complete profile setup
-      if (user.displayName.isEmpty || user.displayName == 'User') {
-        context.go('/user-setup');
-      } else {
-        context.go('/home');
-      }
-    }
-  }
 
   Future<void> _signIn() async {
     if (!_signInFormKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final authController = ref.read(authControllerProvider);
+    final result = await authController.signInWithEmail(
+      _signInEmailController.text.trim(),
+      _signInPasswordController.text,
+    );
 
-    try {
-      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _signInEmailController.text.trim(),
-        password: _signInPasswordController.text,
+    if (mounted) {
+      result.when(
+        success: (user, message) {
+          // Navigation handled by auth state listener
+        },
+        error: (exception) {
+          // Error handled by ErrorService in provider
+        },
+        requiresAction: (actionType, data, message) {
+          // Email verification required - handled by auth state listener
+        },
       );
-
-      if (credential.user != null && !credential.user!.emailVerified) {
-        await FirebaseAuth.instance.signOut();
-        if (mounted) {
-          _showError('Please verify your email before signing in');
-        }
-      }
-      // Navigation handled by auth listener
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        _showError(_getAuthErrorMessage(e.code));
-      }
-    } catch (e) {
-      if (mounted) {
-        _showError('Sign in failed: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
   }
 
   Future<void> _signUp() async {
     if (!_signUpFormKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _signUpEmailController.text.trim(),
-        password: _signUpPasswordController.text,
-      );
-
-      if (credential.user != null) {
-        // Update display name
-        await credential.user!.updateDisplayName(_signUpNameController.text.trim());
-
-        // Send email verification
-        await credential.user!.sendEmailVerification();
-
-        if (mounted) {
-          context.go('/email-verification');
-        }
-      }
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        _showError(_getAuthErrorMessage(e.code));
-      }
-    } catch (e) {
-      if (mounted) {
-        _showError('Sign up failed: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
+    final authController = ref.read(authControllerProvider);
+    final result = await authController.signUpWithEmail(
+      _signUpEmailController.text.trim(),
+      _signUpPasswordController.text,
+      _signUpNameController.text.trim(),
     );
-  }
 
-  String _getAuthErrorMessage(String errorCode) {
-    switch (errorCode) {
-      case 'user-not-found':
-        return 'No account found with this email address';
-      case 'wrong-password':
-        return 'Incorrect password';
-      case 'email-already-in-use':
-        return 'An account already exists with this email';
-      case 'weak-password':
-        return 'Password is too weak';
-      case 'invalid-email':
-        return 'Invalid email address';
-      case 'user-disabled':
-        return 'This account has been disabled';
-      case 'too-many-requests':
-        return 'Too many failed attempts. Please try again later';
-      case 'operation-not-allowed':
-        return 'Email/password sign in is not enabled';
-      default:
-        return 'Authentication failed. Please try again';
+    if (mounted) {
+      result.when(
+        success: (user, message) {
+          // Navigation handled by auth state listener
+        },
+        error: (exception) {
+          // Error handled by ErrorService in provider
+        },
+        requiresAction: (actionType, data, message) {
+          // Email verification required - handled by auth state listener
+        },
+      );
     }
   }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+
+    final isLoading = authState.maybeWhen(
+      authenticating: (message) => true,
+      orElse: () => false,
+    );
+
+    final loadingMessage = authState.maybeWhen(
+      authenticating: (message) => message,
+      orElse: () => null,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -205,16 +175,16 @@ class _EmailAuthScreenState extends ConsumerState<EmailAuthScreen>
           ],
         ),
       ),
-      body: LoadingOverlay(
-        isLoading: _isLoading,
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildSignInTab(context, l10n, theme),
-            _buildSignUpTab(context, l10n, theme),
-          ],
-        ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildSignInTab(context, l10n, theme),
+          _buildSignUpTab(context, l10n, theme),
+        ],
       ),
+    ).withSmoothLoading(
+      isLoading: isLoading,
+      message: loadingMessage,
     );
   }
 

@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/store_model.dart';
 import '../../services/store_service.dart';
 
-// Service Provider
-final storeServiceProvider = Provider<StoreService>((ref) {
+// Service Provider for store details
+final storeDetailServiceProvider = Provider<StoreService>((ref) {
   return StoreService();
 });
 
 // Store Detail Provider - using FutureProvider.family for parameterized access
 final storeDetailProvider = FutureProvider.family<StoreModel, String>((ref, storeId) async {
-  final storeService = ref.read(storeServiceProvider);
+  final storeService = ref.read(storeDetailServiceProvider);
   final store = await storeService.getStoreById(storeId);
 
   if (store == null) {
@@ -23,7 +23,7 @@ final storeDetailProvider = FutureProvider.family<StoreModel, String>((ref, stor
 
 // Alternative: Store Detail with caching and error handling
 final storeDetailWithCacheProvider = StateNotifierProvider.family<StoreDetailNotifier, AsyncValue<StoreModel>, String>((ref, storeId) {
-  return StoreDetailNotifier(ref.read(storeServiceProvider), storeId);
+  return StoreDetailNotifier(ref.read(storeDetailServiceProvider), storeId);
 });
 
 class StoreDetailNotifier extends StateNotifier<AsyncValue<StoreModel>> {

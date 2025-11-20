@@ -6,13 +6,14 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../core/data/models/store_model.dart';
 import '../../../../core/services/store_service.dart';
 import '../../../../core/exceptions/app_exceptions.dart';
+import '../../../../core/presentation/providers/stores_provider.dart';
 
 part 'store_setup_provider.freezed.dart';
 
 // Provider for store setup controller
 final storeSetupProvider = StateNotifierProvider<StoreSetupController, StoreSetupState>((ref) {
   return StoreSetupController(
-    ref.read(storeServiceProvider),
+    ref.read(storesServiceProvider),
   );
 });
 

@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/store_model.dart';
 import '../../services/store_service.dart';
 
-// Service Provider
-final storeServiceProvider = Provider<StoreService>((ref) {
+// Service Provider for stores
+final storesServiceProvider = Provider<StoreService>((ref) {
   return StoreService();
 });
 
 // Featured Stores Provider
 final featuredStoresProvider = StateNotifierProvider<FeaturedStoresNotifier, AsyncValue<List<StoreModel>>>((ref) {
-  return FeaturedStoresNotifier(ref.read(storeServiceProvider));
+  return FeaturedStoresNotifier(ref.read(storesServiceProvider));
 });
 
 class FeaturedStoresNotifier extends StateNotifier<AsyncValue<List<StoreModel>>> {
@@ -39,7 +39,7 @@ class FeaturedStoresNotifier extends StateNotifier<AsyncValue<List<StoreModel>>>
 
 // All Stores Provider
 final allStoresProvider = StateNotifierProvider<AllStoresNotifier, AsyncValue<List<StoreModel>>>((ref) {
-  return AllStoresNotifier(ref.read(storeServiceProvider));
+  return AllStoresNotifier(ref.read(storesServiceProvider));
 });
 
 class AllStoresNotifier extends StateNotifier<AsyncValue<List<StoreModel>>> {
@@ -95,7 +95,7 @@ class AllStoresNotifier extends StateNotifier<AsyncValue<List<StoreModel>>> {
 
 // Search Stores Provider
 final searchStoresProvider = StateNotifierProvider<SearchStoresNotifier, AsyncValue<List<StoreModel>>>((ref) {
-  return SearchStoresNotifier(ref.read(storeServiceProvider));
+  return SearchStoresNotifier(ref.read(storesServiceProvider));
 });
 
 class SearchStoresNotifier extends StateNotifier<AsyncValue<List<StoreModel>>> {

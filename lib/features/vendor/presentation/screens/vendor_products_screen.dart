@@ -6,6 +6,7 @@ import '../../../../core/data/models/product_model.dart';
 import '../../../../core/services/product_service.dart';
 import '../providers/vendor_products_provider.dart';
 import '../widgets/product_management_card.dart';
+import '../../../../core/presentation/providers/products_provider.dart';
 
 class VendorProductsScreen extends ConsumerStatefulWidget {
   const VendorProductsScreen({super.key});

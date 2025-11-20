@@ -900,6 +900,9 @@ mixin _$CategorySettings {
   bool get requiresApproval => throw _privateConstructorUsedError;
   bool get allowCustomPricing => throw _privateConstructorUsedError;
   int get displayOrder => throw _privateConstructorUsedError;
+  bool get isPopular => throw _privateConstructorUsedError;
+  bool get allowsCustomFields => throw _privateConstructorUsedError;
+  int get maxProductsPerStore => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -917,7 +920,10 @@ abstract class $CategorySettingsCopyWith<$Res> {
       {bool isActive,
       bool requiresApproval,
       bool allowCustomPricing,
-      int displayOrder});
+      int displayOrder,
+      bool isPopular,
+      bool allowsCustomFields,
+      int maxProductsPerStore});
 }
 
 /// @nodoc
@@ -937,6 +943,9 @@ class _$CategorySettingsCopyWithImpl<$Res, $Val extends CategorySettings>
     Object? requiresApproval = null,
     Object? allowCustomPricing = null,
     Object? displayOrder = null,
+    Object? isPopular = null,
+    Object? allowsCustomFields = null,
+    Object? maxProductsPerStore = null,
   }) {
     return _then(_value.copyWith(
       isActive: null == isActive
@@ -955,6 +964,18 @@ class _$CategorySettingsCopyWithImpl<$Res, $Val extends CategorySettings>
           ? _value.displayOrder
           : displayOrder // ignore: cast_nullable_to_non_nullable
               as int,
+      isPopular: null == isPopular
+          ? _value.isPopular
+          : isPopular // ignore: cast_nullable_to_non_nullable
+              as bool,
+      allowsCustomFields: null == allowsCustomFields
+          ? _value.allowsCustomFields
+          : allowsCustomFields // ignore: cast_nullable_to_non_nullable
+              as bool,
+      maxProductsPerStore: null == maxProductsPerStore
+          ? _value.maxProductsPerStore
+          : maxProductsPerStore // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 }
@@ -971,7 +992,10 @@ abstract class _$$CategorySettingsImplCopyWith<$Res>
       {bool isActive,
       bool requiresApproval,
       bool allowCustomPricing,
-      int displayOrder});
+      int displayOrder,
+      bool isPopular,
+      bool allowsCustomFields,
+      int maxProductsPerStore});
 }
 
 /// @nodoc
@@ -989,6 +1013,9 @@ class __$$CategorySettingsImplCopyWithImpl<$Res>
     Object? requiresApproval = null,
     Object? allowCustomPricing = null,
     Object? displayOrder = null,
+    Object? isPopular = null,
+    Object? allowsCustomFields = null,
+    Object? maxProductsPerStore = null,
   }) {
     return _then(_$CategorySettingsImpl(
       isActive: null == isActive
@@ -1007,6 +1034,18 @@ class __$$CategorySettingsImplCopyWithImpl<$Res>
           ? _value.displayOrder
           : displayOrder // ignore: cast_nullable_to_non_nullable
               as int,
+      isPopular: null == isPopular
+          ? _value.isPopular
+          : isPopular // ignore: cast_nullable_to_non_nullable
+              as bool,
+      allowsCustomFields: null == allowsCustomFields
+          ? _value.allowsCustomFields
+          : allowsCustomFields // ignore: cast_nullable_to_non_nullable
+              as bool,
+      maxProductsPerStore: null == maxProductsPerStore
+          ? _value.maxProductsPerStore
+          : maxProductsPerStore // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -1018,7 +1057,10 @@ class _$CategorySettingsImpl implements _CategorySettings {
       {this.isActive = true,
       this.requiresApproval = false,
       this.allowCustomPricing = false,
-      this.displayOrder = 0});
+      this.displayOrder = 0,
+      this.isPopular = false,
+      this.allowsCustomFields = true,
+      this.maxProductsPerStore = 1000});
 
   factory _$CategorySettingsImpl.fromJson(Map<String, dynamic> json) =>
       _$$CategorySettingsImplFromJson(json);
@@ -1035,10 +1077,19 @@ class _$CategorySettingsImpl implements _CategorySettings {
   @override
   @JsonKey()
   final int displayOrder;
+  @override
+  @JsonKey()
+  final bool isPopular;
+  @override
+  @JsonKey()
+  final bool allowsCustomFields;
+  @override
+  @JsonKey()
+  final int maxProductsPerStore;
 
   @override
   String toString() {
-    return 'CategorySettings(isActive: $isActive, requiresApproval: $requiresApproval, allowCustomPricing: $allowCustomPricing, displayOrder: $displayOrder)';
+    return 'CategorySettings(isActive: $isActive, requiresApproval: $requiresApproval, allowCustomPricing: $allowCustomPricing, displayOrder: $displayOrder, isPopular: $isPopular, allowsCustomFields: $allowsCustomFields, maxProductsPerStore: $maxProductsPerStore)';
   }
 
   @override
@@ -1053,13 +1104,26 @@ class _$CategorySettingsImpl implements _CategorySettings {
             (identical(other.allowCustomPricing, allowCustomPricing) ||
                 other.allowCustomPricing == allowCustomPricing) &&
             (identical(other.displayOrder, displayOrder) ||
-                other.displayOrder == displayOrder));
+                other.displayOrder == displayOrder) &&
+            (identical(other.isPopular, isPopular) ||
+                other.isPopular == isPopular) &&
+            (identical(other.allowsCustomFields, allowsCustomFields) ||
+                other.allowsCustomFields == allowsCustomFields) &&
+            (identical(other.maxProductsPerStore, maxProductsPerStore) ||
+                other.maxProductsPerStore == maxProductsPerStore));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, isActive, requiresApproval,
-      allowCustomPricing, displayOrder);
+  int get hashCode => Object.hash(
+      runtimeType,
+      isActive,
+      requiresApproval,
+      allowCustomPricing,
+      displayOrder,
+      isPopular,
+      allowsCustomFields,
+      maxProductsPerStore);
 
   @JsonKey(ignore: true)
   @override
@@ -1081,7 +1145,10 @@ abstract class _CategorySettings implements CategorySettings {
       {final bool isActive,
       final bool requiresApproval,
       final bool allowCustomPricing,
-      final int displayOrder}) = _$CategorySettingsImpl;
+      final int displayOrder,
+      final bool isPopular,
+      final bool allowsCustomFields,
+      final int maxProductsPerStore}) = _$CategorySettingsImpl;
 
   factory _CategorySettings.fromJson(Map<String, dynamic> json) =
       _$CategorySettingsImpl.fromJson;
@@ -1094,6 +1161,12 @@ abstract class _CategorySettings implements CategorySettings {
   bool get allowCustomPricing;
   @override
   int get displayOrder;
+  @override
+  bool get isPopular;
+  @override
+  bool get allowsCustomFields;
+  @override
+  int get maxProductsPerStore;
   @override
   @JsonKey(ignore: true)
   _$$CategorySettingsImplCopyWith<_$CategorySettingsImpl> get copyWith =>

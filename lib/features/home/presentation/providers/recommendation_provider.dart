@@ -5,6 +5,7 @@ import '../../../../core/data/models/user_behavior_model.dart';
 import '../../../../core/data/models/product_model.dart';
 import '../../../../core/services/product_service.dart';
 import '../../../../core/presentation/providers/auth_provider.dart';
+import '../../../../core/presentation/providers/products_provider.dart';
 
 // Recommendation service provider
 final recommendationServiceProvider = Provider<RecommendationService>((ref) {
@@ -16,7 +17,11 @@ final personalizedRecommendationsProvider = FutureProvider<List<ProductModel>>((
   final recommendationService = ref.read(recommendationServiceProvider);
   final authState = ref.watch(authProvider);
 
-  final user = authState.value;
+  final user = authState.maybeWhen(
+    authenticated: (user) => user,
+    profileSetupRequired: (user) => user,
+    orElse: () => null,
+  );
   if (user == null) {
     // Return fallback recommendations for anonymous users
     final scores = await recommendationService.getFallbackRecommendations(limit: 10);
@@ -52,7 +57,11 @@ final trendingRecommendationsProvider = FutureProvider<List<ProductModel>>((ref)
   final recommendationService = ref.read(recommendationServiceProvider);
   final authState = ref.watch(authProvider);
 
-  final user = authState.value;
+  final user = authState.maybeWhen(
+    authenticated: (user) => user,
+    profileSetupRequired: (user) => user,
+    orElse: () => null,
+  );
   try {
     final scores = await recommendationService.getTrendingRecommendations(
       userId: user?.id,
@@ -80,7 +89,11 @@ final productBasedRecommendationsProvider = FutureProvider.family<List<ProductMo
   final recommendationService = ref.read(recommendationServiceProvider);
   final authState = ref.watch(authProvider);
 
-  final user = authState.value;
+  final user = authState.maybeWhen(
+    authenticated: (user) => user,
+    profileSetupRequired: (user) => user,
+    orElse: () => null,
+  );
   final scores = await recommendationService.getProductBasedRecommendations(
     productId: productId,
     userId: user?.id,
@@ -95,7 +108,11 @@ final categoryRecommendationsProvider = FutureProvider.family<List<ProductModel>
   final recommendationService = ref.read(recommendationServiceProvider);
   final authState = ref.watch(authProvider);
 
-  final user = authState.value;
+  final user = authState.maybeWhen(
+    authenticated: (user) => user,
+    profileSetupRequired: (user) => user,
+    orElse: () => null,
+  );
   final scores = await recommendationService.getCategoryRecommendations(
     categoryId: categoryId,
     userId: user?.id,
@@ -108,7 +125,11 @@ final categoryRecommendationsProvider = FutureProvider.family<List<ProductModel>
 // Recently viewed products provider
 final recentlyViewedProvider = FutureProvider<List<ProductModel>>((ref) async {
   final authState = ref.watch(authProvider);
-  final user = authState.value;
+  final user = authState.maybeWhen(
+    authenticated: (user) => user,
+    profileSetupRequired: (user) => user,
+    orElse: () => null,
+  );
 
   if (user == null) return [];
 

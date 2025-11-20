@@ -1,5 +1,4 @@
 // lib/core/router/app_router.dart
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -66,18 +65,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
 
         // Check if user needs profile setup
-        if (authState.hasValue) {
-          final user = authState.value;
-          if (user != null) {
-            // Check if user profile is incomplete
-            if (_needsProfileSetup(user) && location != '/user-setup') {
-              return '/user-setup';
-            }
-          }
+        final needsSetup = authState.maybeWhen(
+          profileSetupRequired: (user) => true,
+          orElse: () => false,
+        );
+        
+        if (needsSetup && location != '/user-setup') {
+          return '/user-setup';
         }
 
         // Redirect away from auth routes if already authenticated and setup
-        if (_isAuthRoute(location) && !_needsSetup(authState)) {
+        final isFullyAuthenticated = authState.maybeWhen(
+          authenticated: (user) => true,
+          orElse: () => false,
+        );
+        
+        if (_isAuthRoute(location) && isFullyAuthenticated) {
           return '/home';
         }
       }
@@ -263,18 +266,3 @@ bool _isAuthRoute(String route) {
   return authRoutes.contains(route);
 }
 
-bool _needsProfileSetup(dynamic user) {
-  if (user == null) return true;
-
-  // Check if display name is empty or default
-  final displayName = user.displayName ?? '';
-  return displayName.isEmpty || displayName == 'User';
-}
-
-bool _needsSetup(AsyncValue authState) {
-  if (authState.isLoading) return true;
-  if (!authState.hasValue) return true;
-
-  final user = authState.value;
-  return _needsProfileSetup(user);
-}

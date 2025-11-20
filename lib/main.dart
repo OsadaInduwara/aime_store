@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'app/app.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/firestore_init_service.dart';
 import 'core/config/firebase_options.dart';
 import 'core/utils/admin_setup_utils.dart';
 
@@ -23,6 +24,13 @@ void main() async {
     await AdminSetupUtils.initializeMarketplace();
   } catch (e) {
     print('Warning: Could not initialize marketplace categories: $e');
+  }
+
+  // Initialize personalization system
+  try {
+    await FirestoreInitService.initializePersonalizationCollections();
+  } catch (e) {
+    print('Warning: Could not initialize personalization system: $e');
   }
 
   SystemChrome.setPreferredOrientations([

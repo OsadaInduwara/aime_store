@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/presentation/providers/auth_provider.dart';
+import '../../../../core/presentation/providers/auth_provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../vendor/presentation/providers/store_provider.dart';
+import '../../../vendor/presentation/providers/store_provider.dart';
 import '../../../../core/data/models/user_model.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -102,7 +102,7 @@ class ProfileScreen extends ConsumerWidget {
                 SizedBox(height: 24.h),
 
                 // Vendor Section
-                _buildVendorSection(context, user),
+                _buildVendorSection(context, ref, user),
 
                 // Menu Items
                 _ProfileMenuItem(
@@ -208,7 +208,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildVendorSection(BuildContext context, dynamic user) {
+  Widget _buildVendorSection(BuildContext context, WidgetRef ref, dynamic user) {
     final hasStoreAsync = ref.watch(hasStoreProvider);
     final userStoreAsync = ref.watch(userStoreProvider);
 

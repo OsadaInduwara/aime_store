@@ -236,7 +236,7 @@ class _ImageUploadSectionState extends State<ImageUploadSection> {
     try {
       if (source == ImageSource.gallery) {
         // Multiple image selection from gallery
-        final List<XFile> images = await _picker.pickMultipleImages(
+        final List<XFile> images = await _picker.pickMultiImage(
           maxWidth: 1920,
           maxHeight: 1920,
           imageQuality: 85,

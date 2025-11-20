@@ -147,14 +147,8 @@ enum RecommendationType {
   @JsonValue('recently_viewed')
   recentlyViewed, // Products recently viewed by user
 
-  @JsonValue('price_based')
-  priceBased, // Based on user's price preferences
-
   @JsonValue('new_arrivals')
   newArrivals, // New products in preferred categories
-
-  @JsonValue('seasonal')
-  seasonal, // Seasonal recommendations
 
   @JsonValue('fallback')
   fallback, // Default recommendations when no data available
@@ -188,49 +182,9 @@ class RecommendationContext with _$RecommendationContext {
     String? searchQuery, // Current search query
     @Default([]) List<String> cartProductIds, // Products in cart
     @Default([]) List<String> wishlistProductIds, // Products in wishlist
-    String? location, // User's location for local recommendations
-    TimeOfDay? timeOfDay, // Morning, afternoon, evening, night
-    DayOfWeek? dayOfWeek, // Day of the week
     @Default({}) Map<String, dynamic> additionalContext, // Extra context
   }) = _RecommendationContext;
 
   factory RecommendationContext.fromJson(Map<String, dynamic> json) =>
       _$RecommendationContextFromJson(json);
-}
-
-enum TimeOfDay {
-  @JsonValue('morning')
-  morning,
-
-  @JsonValue('afternoon')
-  afternoon,
-
-  @JsonValue('evening')
-  evening,
-
-  @JsonValue('night')
-  night,
-}
-
-enum DayOfWeek {
-  @JsonValue('monday')
-  monday,
-
-  @JsonValue('tuesday')
-  tuesday,
-
-  @JsonValue('wednesday')
-  wednesday,
-
-  @JsonValue('thursday')
-  thursday,
-
-  @JsonValue('friday')
-  friday,
-
-  @JsonValue('saturday')
-  saturday,
-
-  @JsonValue('sunday')
-  sunday,
 }

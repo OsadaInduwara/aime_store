@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-import '../../../core/presentation/providers/search_provider.dart';
+import '../../../../core/presentation/providers/search_provider.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../core/presentation/widgets/product_card.dart';
+import '../../../../core/presentation/widgets/product_card.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../home/presentation/providers/recommendation_provider.dart';
+import '../../../home/presentation/providers/recommendation_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});

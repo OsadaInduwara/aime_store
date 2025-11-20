@@ -108,27 +108,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       // Check if user profile needs setup
       final authState = ref.read(authProvider);
-      if (authState.hasValue) {
-        final user = authState.value;
-        if (user == null || _needsProfileSetup(user)) {
-          context.go('/user-setup');
-          return;
-        }
-
-        // Check if vendor needs store setup
-        if (user.userType.name == 'vendor') {
-          // Additional vendor setup checks can be added here
-          // For now, go to home
-          context.go('/home');
-          return;
-        }
-
-        // User is fully set up
-        context.go('/home');
-      } else {
-        // Auth state has error or no value, but user exists
+      final user = authState.maybeWhen(
+        authenticated: (user) => user,
+        profileSetupRequired: (user) => user,
+        orElse: () => null,
+      );
+      
+      if (user == null || _needsProfileSetup(user)) {
         context.go('/user-setup');
+        return;
       }
+
+      // Check if vendor needs store setup
+      if (user.userType.name == 'vendor') {
+        // Additional vendor setup checks can be added here
+        // For now, go to home
+        context.go('/home');
+        return;
+      }
+
+      // User is fully set up
+      context.go('/home');
     } catch (e) {
       // Error during navigation check, go to auth selection
       debugPrint('Splash navigation error: $e');

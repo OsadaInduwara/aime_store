@@ -59,6 +59,9 @@ class CategorySettings with _$CategorySettings {
     @Default(false) bool requiresApproval,
     @Default(false) bool allowCustomPricing,
     @Default(0) int displayOrder,
+    @Default(false) bool isPopular,
+    @Default(true) bool allowsCustomFields,
+    @Default(1000) int maxProductsPerStore,
   }) = _CategorySettings;
 
   factory CategorySettings.fromJson(Map<String, dynamic> json) => _$CategorySettingsFromJson(json);

@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/product_model.dart';
 import '../../services/product_service.dart';
 
-// Service Provider (reuse from products_provider if needed)
-final productServiceProvider = Provider<ProductService>((ref) {
+// Service Provider for store products
+final storeProductServiceProvider = Provider<ProductService>((ref) {
   return ProductService();
 });
 
 // Store Products Provider
 final storeProductsProvider = StateNotifierProvider.family<StoreProductsNotifier, AsyncValue<List<ProductModel>>, String>((ref, storeId) {
-  return StoreProductsNotifier(ref.read(productServiceProvider), storeId);
+  return StoreProductsNotifier(ref.read(storeProductServiceProvider), storeId);
 });
 
 class StoreProductsNotifier extends StateNotifier<AsyncValue<List<ProductModel>>> {

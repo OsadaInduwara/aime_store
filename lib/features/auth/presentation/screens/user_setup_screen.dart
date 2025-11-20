@@ -52,8 +52,13 @@ class _UserSetupScreenState extends ConsumerState<UserSetupScreen> {
 
     // Load from auth provider if available
     final authState = ref.read(authProvider);
-    if (authState.hasValue && authState.value != null) {
-      final user = authState.value!;
+    final user = authState.maybeWhen(
+      authenticated: (user) => user,
+      profileSetupRequired: (user) => user,
+      orElse: () => null,
+    );
+    
+    if (user != null) {
       _nameController.text = user.displayName;
       if (user.email != null) {
         _emailController.text = user.email!;
@@ -83,7 +88,11 @@ class _UserSetupScreenState extends ConsumerState<UserSetupScreen> {
 
       // Create or update user document in Firestore
       final authNotifier = ref.read(authProvider.notifier);
-      final existingUser = ref.read(authProvider).value;
+      final existingUser = ref.read(authProvider).maybeWhen(
+        authenticated: (user) => user,
+        profileSetupRequired: (user) => user,
+        orElse: () => null,
+      );
 
       UserModel updatedUser;
       final now = DateTime.now();

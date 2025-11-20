@@ -9,6 +9,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/recommendation_provider.dart';
 import '../../../../core/presentation/widgets/product_card.dart';
+import '../../../../core/data/models/user_behavior_model.dart';
 
 class RecommendationSection extends ConsumerWidget {
   final String title;

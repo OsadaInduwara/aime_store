@@ -20,7 +20,7 @@ class ProductFormSection extends ConsumerStatefulWidget {
 class _ProductFormSectionState extends ConsumerState<ProductFormSection> {
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesProvider);
+    final categoriesAsync = ref.watch(allCategoriesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +74,7 @@ class _ProductFormSectionState extends ConsumerState<ProductFormSection> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () => ref.refresh(categoriesProvider),
+                  onPressed: () => ref.refresh(allCategoriesProvider),
                   child: const Text('Retry'),
                 ),
               ],
@@ -147,10 +147,10 @@ class _ProductFormSectionState extends ConsumerState<ProductFormSection> {
           child: Row(
             children: [
               // Category icon if available
-              if (category.iconUrl?.isNotEmpty == true) ...[
+              if (category.icon?.isNotEmpty == true) ...[
                 CircleAvatar(
                   radius: 12,
-                  backgroundImage: NetworkImage(category.iconUrl!),
+                  backgroundImage: NetworkImage(category.icon!),
                 ),
                 const SizedBox(width: 8),
               ] else ...[

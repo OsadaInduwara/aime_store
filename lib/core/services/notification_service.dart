@@ -1,195 +1,168 @@
-// lib/core/services/notification_service.dart - COMPLETE VERSION
+// lib/core/services/notification_service.dart
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Notification service provider
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+});
+
+/// Notification service for push notifications
 class NotificationService {
-  static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  static String? _fcmToken;
-  static bool _isInitialized = false;
+  /// Initialize notification service
+  Future<void> initialize() async {
+    // Request permission
+    await _requestPermission();
 
-  static Future<void> initialize() async {
-    if (_isInitialized) return;
+    // Initialize local notifications
+    await _initializeLocalNotifications();
 
-    try {
-      // Request permissions
-      final settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-        criticalAlert: false,
-      );
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('User granted notification permission');
-      } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        debugPrint('User granted provisional notification permission');
-      } else {
-        debugPrint('User declined or has not accepted notification permission');
-        return;
-      }
+    // Handle background messages
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-      // Initialize local notifications
-      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      );
-      const initSettings = InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      );
-
-      await _localNotifications.initialize(
-        initSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped,
-      );
-
-      // Create notification channel for Android
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        await _createNotificationChannel();
-      }
-
-      // Get FCM token
-      _fcmToken = await _messaging.getToken();
-      debugPrint('FCM Token: $_fcmToken');
-
-      // Listen for token refresh
-      _messaging.onTokenRefresh.listen((token) {
-        _fcmToken = token;
-        debugPrint('FCM Token refreshed: $token');
-        // TODO: Send updated token to server
-      });
-
-      // Handle background messages
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-      // Handle notification taps when app is in background
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-
-      // Handle notification tap when app is terminated
-      final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleNotificationTap(initialMessage);
-      }
-
-      _isInitialized = true;
-    } catch (e) {
-      debugPrint('Error initializing notifications: $e');
-    }
+    // Handle notification taps
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
   }
 
-  static Future<void> _createNotificationChannel() async {
-    const channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
-      playSound: true,
+  /// Request notification permission
+  Future<void> _requestPermission() async {
+    final settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
     );
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-  }
-
-  static void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('Notification tapped: ${response.payload}');
-    // TODO: Handle notification tap navigation
-  }
-
-  static Future<String?> getToken() async {
-    if (!_isInitialized) await initialize();
-    return _fcmToken ?? await _messaging.getToken();
-  }
-
-  static Future<void> subscribeToTopic(String topic) async {
-    try {
-      await _messaging.subscribeToTopic(topic);
-      debugPrint('Subscribed to topic: $topic');
-    } catch (e) {
-      debugPrint('Error subscribing to topic $topic: $e');
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('User granted permission');
+    } else {
+      print('User declined or has not accepted permission');
     }
   }
 
-  static Future<void> unsubscribeFromTopic(String topic) async {
-    try {
-      await _messaging.unsubscribeFromTopic(topic);
-      debugPrint('Unsubscribed from topic: $topic');
-    } catch (e) {
-      debugPrint('Error unsubscribing from topic $topic: $e');
-    }
+  /// Initialize local notifications
+  Future<void> _initializeLocalNotifications() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (details) {
+        // Handle notification tap
+        print('Notification tapped: ${details.payload}');
+      },
+    );
   }
 
-  static Future<void> showLocalNotification({
+  /// Handle foreground messages
+  void _handleForegroundMessage(RemoteMessage message) {
+    print('Received foreground message: ${message.messageId}');
+
+    // Show local notification
+    _showLocalNotification(
+      title: message.notification?.title ?? 'New Notification',
+      body: message.notification?.body ?? '',
+      payload: message.data.toString(),
+    );
+  }
+
+  /// Handle notification tap
+  void _handleNotificationTap(RemoteMessage message) {
+    print('Notification tapped: ${message.messageId}');
+    // Navigate to appropriate screen based on message data
+  }
+
+  /// Show local notification
+  Future<void> _showLocalNotification({
     required String title,
     required String body,
     String? payload,
-    int id = 0,
   }) async {
     const androidDetails = AndroidNotificationDetails(
-      'high_importance_channel',
-      'High Importance Notifications',
-      channelDescription: 'This channel is used for important notifications.',
+      'default_channel',
+      'Default Channel',
+      channelDescription: 'Default notification channel',
       importance: Importance.high,
       priority: Priority.high,
-      showWhen: true,
     );
 
-    final iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+    const iosDetails = DarwinNotificationDetails();
 
-    final details = NotificationDetails(
+    const notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
-    await _localNotifications.show(id, title, body, details, payload: payload);
+    await _localNotifications.show(
+      DateTime.now().millisecond,
+      title,
+      body,
+      notificationDetails,
+      payload: payload,
+    );
   }
 
-  static Future<void> _handleForegroundMessage(RemoteMessage message) async {
-    debugPrint('Handling foreground message: ${message.messageId}');
-    debugPrint('Message data: ${message.data}');
+  /// Send order notification
+  Future<void> sendOrderNotification({
+    required String userId,
+    required String orderId,
+    required String title,
+    required String body,
+    required String type,
+  }) async {
+    try {
+      // Save notification to Firestore
+      await _firestore.collection('notifications').add({
+        'userId': userId,
+        'orderId': orderId,
+        'title': title,
+        'body': body,
+        'type': type,
+        'read': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-    final notification = message.notification;
-    if (notification != null) {
-      await showLocalNotification(
-        id: message.hashCode,
-        title: notification.title ?? 'New Notification',
-        body: notification.body ?? '',
-        payload: message.data.toString(),
-      );
+      // Send push notification via FCM
+      // Note: This requires a backend service to send FCM messages
+      // For now, we'll just save to Firestore
+    } catch (e) {
+      print('Failed to send notification: $e');
     }
   }
 
-  static void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('Notification tapped: ${message.messageId}');
-    debugPrint('Message data: ${message.data}');
-
-    // TODO: Navigate to appropriate screen based on message data
+  /// Get FCM token
+  Future<String?> getToken() async {
+    return await _messaging.getToken();
   }
 
-  static Future<void> cancelNotification(int id) async {
-    await _localNotifications.cancel(id);
+  /// Subscribe to topic
+  Future<void> subscribeToTopic(String topic) async {
+    await _messaging.subscribeToTopic(topic);
   }
 
-  static Future<void> cancelAllNotifications() async {
-    await _localNotifications.cancelAll();
+  /// Unsubscribe from topic
+  Future<void> unsubscribeFromTopic(String topic) async {
+    await _messaging.unsubscribeFromTopic(topic);
   }
 }
 
-@pragma('vm:entry-point')
+/// Background message handler
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('Handling background message: ${message.messageId}');
+  print('Handling background message: ${message.messageId}');
 }

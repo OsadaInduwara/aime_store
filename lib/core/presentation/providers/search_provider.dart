@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/product_model.dart';
 import '../../services/product_service.dart';
 
-// Service Provider (reuse from products_provider if needed)
-final productServiceProvider = Provider<ProductService>((ref) {
+// Service Provider for search
+final searchProductServiceProvider = Provider<ProductService>((ref) {
   return ProductService();
 });
 
 // Search Provider
 final searchProvider = StateNotifierProvider<SearchNotifier, AsyncValue<List<ProductModel>>>((ref) {
-  return SearchNotifier(ref.read(productServiceProvider));
+  return SearchNotifier(ref.read(searchProductServiceProvider));
 });
 
 class SearchNotifier extends StateNotifier<AsyncValue<List<ProductModel>>> {

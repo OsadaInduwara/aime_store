@@ -1453,12 +1453,6 @@ mixin _$RecommendationContext {
       throw _privateConstructorUsedError; // Products in cart
   List<String> get wishlistProductIds =>
       throw _privateConstructorUsedError; // Products in wishlist
-  String? get location =>
-      throw _privateConstructorUsedError; // User's location for local recommendations
-  TimeOfDay? get timeOfDay =>
-      throw _privateConstructorUsedError; // Morning, afternoon, evening, night
-  DayOfWeek? get dayOfWeek =>
-      throw _privateConstructorUsedError; // Day of the week
   Map<String, dynamic> get additionalContext =>
       throw _privateConstructorUsedError;
 
@@ -1482,9 +1476,6 @@ abstract class $RecommendationContextCopyWith<$Res> {
       String? searchQuery,
       List<String> cartProductIds,
       List<String> wishlistProductIds,
-      String? location,
-      TimeOfDay? timeOfDay,
-      DayOfWeek? dayOfWeek,
       Map<String, dynamic> additionalContext});
 }
 
@@ -1509,9 +1500,6 @@ class _$RecommendationContextCopyWithImpl<$Res,
     Object? searchQuery = freezed,
     Object? cartProductIds = null,
     Object? wishlistProductIds = null,
-    Object? location = freezed,
-    Object? timeOfDay = freezed,
-    Object? dayOfWeek = freezed,
     Object? additionalContext = null,
   }) {
     return _then(_value.copyWith(
@@ -1543,18 +1531,6 @@ class _$RecommendationContextCopyWithImpl<$Res,
           ? _value.wishlistProductIds
           : wishlistProductIds // ignore: cast_nullable_to_non_nullable
               as List<String>,
-      location: freezed == location
-          ? _value.location
-          : location // ignore: cast_nullable_to_non_nullable
-              as String?,
-      timeOfDay: freezed == timeOfDay
-          ? _value.timeOfDay
-          : timeOfDay // ignore: cast_nullable_to_non_nullable
-              as TimeOfDay?,
-      dayOfWeek: freezed == dayOfWeek
-          ? _value.dayOfWeek
-          : dayOfWeek // ignore: cast_nullable_to_non_nullable
-              as DayOfWeek?,
       additionalContext: null == additionalContext
           ? _value.additionalContext
           : additionalContext // ignore: cast_nullable_to_non_nullable
@@ -1580,9 +1556,6 @@ abstract class _$$RecommendationContextImplCopyWith<$Res>
       String? searchQuery,
       List<String> cartProductIds,
       List<String> wishlistProductIds,
-      String? location,
-      TimeOfDay? timeOfDay,
-      DayOfWeek? dayOfWeek,
       Map<String, dynamic> additionalContext});
 }
 
@@ -1605,9 +1578,6 @@ class __$$RecommendationContextImplCopyWithImpl<$Res>
     Object? searchQuery = freezed,
     Object? cartProductIds = null,
     Object? wishlistProductIds = null,
-    Object? location = freezed,
-    Object? timeOfDay = freezed,
-    Object? dayOfWeek = freezed,
     Object? additionalContext = null,
   }) {
     return _then(_$RecommendationContextImpl(
@@ -1639,18 +1609,6 @@ class __$$RecommendationContextImplCopyWithImpl<$Res>
           ? _value._wishlistProductIds
           : wishlistProductIds // ignore: cast_nullable_to_non_nullable
               as List<String>,
-      location: freezed == location
-          ? _value.location
-          : location // ignore: cast_nullable_to_non_nullable
-              as String?,
-      timeOfDay: freezed == timeOfDay
-          ? _value.timeOfDay
-          : timeOfDay // ignore: cast_nullable_to_non_nullable
-              as TimeOfDay?,
-      dayOfWeek: freezed == dayOfWeek
-          ? _value.dayOfWeek
-          : dayOfWeek // ignore: cast_nullable_to_non_nullable
-              as DayOfWeek?,
       additionalContext: null == additionalContext
           ? _value._additionalContext
           : additionalContext // ignore: cast_nullable_to_non_nullable
@@ -1670,9 +1628,6 @@ class _$RecommendationContextImpl implements _RecommendationContext {
       this.searchQuery,
       final List<String> cartProductIds = const [],
       final List<String> wishlistProductIds = const [],
-      this.location,
-      this.timeOfDay,
-      this.dayOfWeek,
       final Map<String, dynamic> additionalContext = const {}})
       : _cartProductIds = cartProductIds,
         _wishlistProductIds = wishlistProductIds,
@@ -1718,17 +1673,8 @@ class _$RecommendationContextImpl implements _RecommendationContext {
   }
 
 // Products in wishlist
-  @override
-  final String? location;
-// User's location for local recommendations
-  @override
-  final TimeOfDay? timeOfDay;
-// Morning, afternoon, evening, night
-  @override
-  final DayOfWeek? dayOfWeek;
-// Day of the week
   final Map<String, dynamic> _additionalContext;
-// Day of the week
+// Products in wishlist
   @override
   @JsonKey()
   Map<String, dynamic> get additionalContext {
@@ -1740,7 +1686,7 @@ class _$RecommendationContextImpl implements _RecommendationContext {
 
   @override
   String toString() {
-    return 'RecommendationContext(userId: $userId, currentProductId: $currentProductId, currentCategoryId: $currentCategoryId, currentStoreId: $currentStoreId, searchQuery: $searchQuery, cartProductIds: $cartProductIds, wishlistProductIds: $wishlistProductIds, location: $location, timeOfDay: $timeOfDay, dayOfWeek: $dayOfWeek, additionalContext: $additionalContext)';
+    return 'RecommendationContext(userId: $userId, currentProductId: $currentProductId, currentCategoryId: $currentCategoryId, currentStoreId: $currentStoreId, searchQuery: $searchQuery, cartProductIds: $cartProductIds, wishlistProductIds: $wishlistProductIds, additionalContext: $additionalContext)';
   }
 
   @override
@@ -1761,12 +1707,6 @@ class _$RecommendationContextImpl implements _RecommendationContext {
                 .equals(other._cartProductIds, _cartProductIds) &&
             const DeepCollectionEquality()
                 .equals(other._wishlistProductIds, _wishlistProductIds) &&
-            (identical(other.location, location) ||
-                other.location == location) &&
-            (identical(other.timeOfDay, timeOfDay) ||
-                other.timeOfDay == timeOfDay) &&
-            (identical(other.dayOfWeek, dayOfWeek) ||
-                other.dayOfWeek == dayOfWeek) &&
             const DeepCollectionEquality()
                 .equals(other._additionalContext, _additionalContext));
   }
@@ -1782,9 +1722,6 @@ class _$RecommendationContextImpl implements _RecommendationContext {
       searchQuery,
       const DeepCollectionEquality().hash(_cartProductIds),
       const DeepCollectionEquality().hash(_wishlistProductIds),
-      location,
-      timeOfDay,
-      dayOfWeek,
       const DeepCollectionEquality().hash(_additionalContext));
 
   @JsonKey(ignore: true)
@@ -1811,9 +1748,6 @@ abstract class _RecommendationContext implements RecommendationContext {
           final String? searchQuery,
           final List<String> cartProductIds,
           final List<String> wishlistProductIds,
-          final String? location,
-          final TimeOfDay? timeOfDay,
-          final DayOfWeek? dayOfWeek,
           final Map<String, dynamic> additionalContext}) =
       _$RecommendationContextImpl;
 
@@ -1835,12 +1769,6 @@ abstract class _RecommendationContext implements RecommendationContext {
   @override // Products in cart
   List<String> get wishlistProductIds;
   @override // Products in wishlist
-  String? get location;
-  @override // User's location for local recommendations
-  TimeOfDay? get timeOfDay;
-  @override // Morning, afternoon, evening, night
-  DayOfWeek? get dayOfWeek;
-  @override // Day of the week
   Map<String, dynamic> get additionalContext;
   @override
   @JsonKey(ignore: true)

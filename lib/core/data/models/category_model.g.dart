@@ -90,6 +90,10 @@ _$CategorySettingsImpl _$$CategorySettingsImplFromJson(
       requiresApproval: json['requiresApproval'] as bool? ?? false,
       allowCustomPricing: json['allowCustomPricing'] as bool? ?? false,
       displayOrder: (json['displayOrder'] as num?)?.toInt() ?? 0,
+      isPopular: json['isPopular'] as bool? ?? false,
+      allowsCustomFields: json['allowsCustomFields'] as bool? ?? true,
+      maxProductsPerStore:
+          (json['maxProductsPerStore'] as num?)?.toInt() ?? 1000,
     );
 
 Map<String, dynamic> _$$CategorySettingsImplToJson(
@@ -99,4 +103,7 @@ Map<String, dynamic> _$$CategorySettingsImplToJson(
       'requiresApproval': instance.requiresApproval,
       'allowCustomPricing': instance.allowCustomPricing,
       'displayOrder': instance.displayOrder,
+      'isPopular': instance.isPopular,
+      'allowsCustomFields': instance.allowsCustomFields,
+      'maxProductsPerStore': instance.maxProductsPerStore,
     };

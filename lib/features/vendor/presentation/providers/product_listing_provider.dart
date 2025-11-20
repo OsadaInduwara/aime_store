@@ -8,6 +8,7 @@ import '../../../../core/services/product_service.dart';
 import '../../../../core/exceptions/app_exceptions.dart';
 import '../../../auth/presentation/providers/auth_error_handler.dart';
 import '../../domain/models/product_listing_form_state.dart';
+import '../../../../core/presentation/providers/products_provider.dart';
 
 part 'product_listing_provider.freezed.dart';
 

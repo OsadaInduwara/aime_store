@@ -38,13 +38,14 @@ dependencies:
   riverpod_annotation: ^2.6.1
 
   # Firebase
-  firebase_core: ^3.13.0
-  firebase_auth: ^5.5.2
+  firebase_core: ^3.7.1
+  firebase_auth: ^5.3.3
   cloud_firestore: ^5.6.6
-  firebase_storage: ^12.0.0
-  firebase_messaging: ^15.0.0
-  firebase_crashlytics: ^4.3.6
-  firebase_analytics: ^11.2.0
+  firebase_storage: ^12.3.6
+  firebase_messaging: ^15.1.5
+  firebase_crashlytics: ^4.1.5
+  firebase_analytics: ^11.3.5
+  flutter_local_notifications: ^18.0.1
 
   # Navigation
   go_router: ^15.1.1
@@ -79,8 +80,8 @@ dependencies:
   country_code_picker: ^3.0.0
   pinput: ^5.0.1
 
-  # Payment (Stripe as example)
-  flutter_stripe: ^11.5.0
+  # Payment (PayHere - Sri Lankan payment gateway)
+  payhere_mobilesdk_flutter: ^3.0.8
 
   # Permissions
   permission_handler: ^12.0.0+1
@@ -102,7 +103,6 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  flutter_local_notifications: ^19.2.1
   google_sign_in: ^6.3.0
   flutter_facebook_auth: ^7.1.2
 
@@ -116,6 +116,10 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  # Testing
+  mockito: ^5.4.4
+  
   # Code Generation
   riverpod_generator: ^2.3.9
   build_runner: ^2.4.7

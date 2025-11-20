@@ -1,0 +1,108 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Validate file size (max 10MB for images, 10MB for videos)
+    function isValidImageSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    function isValidVideoSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // Validate file types
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+    
+    // User profile images
+    match /users/{userId}/profile/{fileName} {
+      // Anyone can read profile images
+      allow read: if true;
+      
+      // Only the user can upload their profile image
+      allow create, update: if isAuthenticated() &&
+                              isOwner(userId) &&
+                              isImage() &&
+                              isValidImageSize();
+      
+      // Only the user can delete their profile image
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Store images (logo, cover)
+    match /stores/{storeId}/{imageType}/{fileName} {
+      // Anyone can read store images
+      allow read: if true;
+      
+      // Only store owner can upload store images
+      allow create, update: if isAuthenticated() &&
+                              isImage() &&
+                              isValidImageSize();
+      
+      // Only store owner can delete store images
+      allow delete: if isAuthenticated();
+    }
+    
+    // Product images
+    match /products/{productId}/images/{fileName} {
+      // Anyone can read product images
+      allow read: if true;
+      
+      // Only authenticated vendors can upload product images
+      allow create, update: if isAuthenticated() &&
+                              isImage() &&
+                              isValidImageSize();
+      
+      // Only product owner can delete product images
+      allow delete: if isAuthenticated();
+    }
+    
+    // Product videos
+    match /products/{productId}/videos/{fileName} {
+      // Anyone can read product videos
+      allow read: if true;
+      
+      // Only authenticated vendors can upload product videos
+      allow create, update: if isAuthenticated() &&
+                              isVideo() &&
+                              isValidVideoSize();
+      
+      // Only product owner can delete product videos
+      allow delete: if isAuthenticated();
+    }
+    
+    // Review images
+    match /reviews/{reviewId}/images/{fileName} {
+      // Anyone can read review images
+      allow read: if true;
+      
+      // Only authenticated users can upload review images
+      allow create, update: if isAuthenticated() &&
+                              isImage() &&
+                              isValidImageSize();
+      
+      // Only review author can delete review images
+      allow delete: if isAuthenticated();
+    }
+    
+    // Default deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

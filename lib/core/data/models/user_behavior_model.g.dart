@@ -177,9 +177,7 @@ const _$RecommendationTypeEnumMap = {
   RecommendationType.collaborative: 'collaborative',
   RecommendationType.categoryBased: 'category_based',
   RecommendationType.recentlyViewed: 'recently_viewed',
-  RecommendationType.priceBased: 'price_based',
   RecommendationType.newArrivals: 'new_arrivals',
-  RecommendationType.seasonal: 'seasonal',
   RecommendationType.fallback: 'fallback',
 };
 
@@ -211,9 +209,6 @@ _$RecommendationContextImpl _$$RecommendationContextImplFromJson(
               ?.map((e) => e as String)
               .toList() ??
           const [],
-      location: json['location'] as String?,
-      timeOfDay: $enumDecodeNullable(_$TimeOfDayEnumMap, json['timeOfDay']),
-      dayOfWeek: $enumDecodeNullable(_$DayOfWeekEnumMap, json['dayOfWeek']),
       additionalContext:
           json['additionalContext'] as Map<String, dynamic>? ?? const {},
     );
@@ -228,25 +223,5 @@ Map<String, dynamic> _$$RecommendationContextImplToJson(
       'searchQuery': instance.searchQuery,
       'cartProductIds': instance.cartProductIds,
       'wishlistProductIds': instance.wishlistProductIds,
-      'location': instance.location,
-      'timeOfDay': _$TimeOfDayEnumMap[instance.timeOfDay],
-      'dayOfWeek': _$DayOfWeekEnumMap[instance.dayOfWeek],
       'additionalContext': instance.additionalContext,
     };
-
-const _$TimeOfDayEnumMap = {
-  TimeOfDay.morning: 'morning',
-  TimeOfDay.afternoon: 'afternoon',
-  TimeOfDay.evening: 'evening',
-  TimeOfDay.night: 'night',
-};
-
-const _$DayOfWeekEnumMap = {
-  DayOfWeek.monday: 'monday',
-  DayOfWeek.tuesday: 'tuesday',
-  DayOfWeek.wednesday: 'wednesday',
-  DayOfWeek.thursday: 'thursday',
-  DayOfWeek.friday: 'friday',
-  DayOfWeek.saturday: 'saturday',
-  DayOfWeek.sunday: 'sunday',
-};
