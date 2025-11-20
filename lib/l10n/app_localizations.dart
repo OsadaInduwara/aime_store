@@ -42,6 +42,13 @@ class AppLocalizations {
   String get optional => 'Optional';
   String get required => 'Required';
   String get seeAll => 'See All';
+  String get searchProducts => 'Search products...';
+  String get addToCart => 'Add to Cart';
+  String get buyNow => 'Buy Now';
+  String get user => 'User';
+  String get goodMorning => 'Good Morning';
+  String get featuredStores => 'Featured Stores';
+  String get featuredProducts => 'Featured Products';
 
   // Authentication
   String get welcomeToLocalMarket => 'Welcome to LocalMarket';
@@ -109,15 +116,11 @@ class AppLocalizations {
   String get useAnotherEmail => 'Use Another Email';
 
   // Home
-  String get goodMorning => 'Good Morning';
-  String get user => 'User';
-  String get searchProducts => 'Search products...';
-  String get featuredProducts => 'Featured Products';
-  String get featuredStores => 'Featured Stores';
+  String get justForYou => 'Just for You';
+  String get trendingNow => 'Trending Now';
+  String get recentlyViewed => 'Recently Viewed';
 
   // Products
-  String get addToCart => 'Add to Cart';
-  String get buyNow => 'Buy Now';
   String get outOfStock => 'Out of Stock';
   String get inStock => 'In Stock';
   String get limitedStock => 'Limited Stock';

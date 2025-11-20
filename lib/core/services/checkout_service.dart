@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
-import '../models/order_model.dart';
-import '../models/user_model.dart';
+import '../data/models/order_model.dart';
+import '../data/models/user_model.dart';
 import 'cart_service.dart';
 
 class CheckoutService {

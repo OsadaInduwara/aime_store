@@ -2,7 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/product_model.dart';
+import '../data/models/product_model.dart';
 import 'product_service.dart';
 
 class WishlistService {

@@ -72,6 +72,8 @@ dependencies:
   image_picker: ^1.0.4
   image_cropper: ^9.1.0
   flutter_image_compress: ^2.1.0
+  file_picker: ^8.0.6
+  video_player: ^2.8.6
 
   # Phone & OTP
   country_code_picker: ^3.0.0

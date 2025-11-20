@@ -1,6 +1,6 @@
 // test/user_model_test.dart - Test to verify Freezed models work
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aime_store/core/models/user_model.dart';
+import 'package:aime_store/core/data/models/user_model.dart';
 
 void main() {
   group('UserModel Tests', () {

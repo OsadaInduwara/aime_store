@@ -1,7 +1,7 @@
 // lib/core/services/banner_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/banner_model.dart';
+import '../data/models/banner_model.dart';
 
 class BannerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
